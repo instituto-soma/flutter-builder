@@ -18,7 +18,7 @@ RUN \
 # ---------------------------------------------------
 echo "\n\nInstalling dependencies and cleaning cache" && \
 apt-get update -qq && \
-apt-get install -qq --no-install-recommends curl git lib32stdc++6 xz-utils unzip openjdk-8-jdk libglu1-mesa -y > /dev/null && \
+apt-get install -qq --no-install-recommends curl git lib32stdc++6 xz-utils unzip openjdk-8-jdk libglu1-mesa openssh-client -y > /dev/null && \
 apt-get clean && rm -rf /var/lib/apt/lists/* && \
 \
 #Download and install Flutter
