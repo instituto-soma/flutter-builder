@@ -97,7 +97,7 @@ RUN gem install fastlane -N
 
 WORKDIR /var/www
 
-ENV FLUTTER_VERSION=1.2.1
+ENV FLUTTER_VERSION=1.5.4-hotfix.2
 ENV FLUTTER_HOME='/opt/flutter'
 
 ENV PATH="${PATH}:${FLUTTER_HOME}/bin"
