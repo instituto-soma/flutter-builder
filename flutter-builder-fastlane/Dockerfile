@@ -1,4 +1,5 @@
 FROM debian:stretch
+MAINTAINER Flutter Developers <flutter-dev@googlegroups.com>
 
 RUN apt-get update -y
 RUN apt-get upgrade -y
