@@ -80,7 +80,7 @@ RUN /usr/bin/npm --verbose install -g firebase-tools
 RUN mkdir -p /opt/gopath/bin
 ENV GOPATH=/opt/gopath
 ENV PATH="${GOPATH}/bin:${PATH}"
-RUN go get -u github.com/technosophos/dashing
+#RUN go get -u github.com/technosophos/dashing
 
 # Set locale to en_US
 RUN locale-gen en_US "en_US.UTF-8" && dpkg-reconfigure locales
