@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM ruby:2.6.3-stretch
 MAINTAINER Flutter Developers <flutter-dev@googlegroups.com>
 
 RUN apt-get update -y
@@ -24,8 +24,6 @@ RUN bash "${NODEJS_INSTALL}/nodejs_install.sh"
 RUN apt-get install -y --no-install-recommends \
   locales \
   golang \
-  ruby \
-  ruby-dev \
   nodejs \
   lib32stdc++6 \
   libstdc++6 \
