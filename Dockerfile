@@ -1,60 +1,123 @@
-FROM ubuntu:18.04
-MAINTAINER devops@institutosoma.org.br
+FROM ruby:2.6.3-stretch
+MAINTAINER Flutter Developers <flutter-dev@googlegroups.com>
 
-ARG ANDROID_SDK_ROOT='/opt/android-sdk'
-ARG ANDROID_HOME=${ANDROID_SDK_ROOT}
-ARG ANDROID_SDK_PLATFORM=28
-ARG ANDROID_SDK_TOOLS_VERSION=4333796
-ARG ANDROID_BUILD_TOOLS_VERSION=28.0.3
-ARG FLUTTER_HOME='/opt/flutter'
-ARG FLUTTER_VERSION=1.2.1
+RUN apt-get update -y
+RUN apt-get upgrade -y
+
+# Install basics
+RUN apt-get install -y --no-install-recommends \
+  git \
+  wget \
+  curl \
+  zip \
+  unzip \
+  ca-certificates \
+  gnupg
+
+# Add nodejs repository to apt sources and install it.
+ENV NODEJS_INSTALL="/opt/nodejs_install"
+RUN mkdir -p "${NODEJS_INSTALL}"
+RUN wget -q https://deb.nodesource.com/setup_10.x -O "${NODEJS_INSTALL}/nodejs_install.sh"
+RUN bash "${NODEJS_INSTALL}/nodejs_install.sh"
+
+# Install the rest of the dependencies.
+RUN apt-get install -y --no-install-recommends \
+  locales \
+  golang \
+  nodejs \
+  lib32stdc++6 \
+  libstdc++6 \
+  libglu1-mesa \
+  build-essential \
+  default-jdk-headless
+
+# Install the Android SDK Dependency.
+ENV ANDROID_SDK_URL="https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip"
+ENV ANDROID_TOOLS_ROOT="/opt/android_sdk"
+RUN mkdir -p "${ANDROID_TOOLS_ROOT}"
+RUN mkdir -p ~/.android
+# Silence warning.
+RUN touch ~/.android/repositories.cfg
+ENV ANDROID_SDK_ARCHIVE="${ANDROID_TOOLS_ROOT}/archive"
+RUN wget --progress=dot:giga "${ANDROID_SDK_URL}" -O "${ANDROID_SDK_ARCHIVE}"
+RUN unzip -q -d "${ANDROID_TOOLS_ROOT}" "${ANDROID_SDK_ARCHIVE}"
+# Suppressing output of sdkmanager to keep log size down
+# (it prints install progress WAY too often).
+RUN yes "y" | "${ANDROID_TOOLS_ROOT}/tools/bin/sdkmanager" "tools" > /dev/null
+RUN yes "y" | "${ANDROID_TOOLS_ROOT}/tools/bin/sdkmanager" "build-tools;28.0.3" > /dev/null
+RUN yes "y" | "${ANDROID_TOOLS_ROOT}/tools/bin/sdkmanager" "platforms;android-28" > /dev/null
+RUN yes "y" | "${ANDROID_TOOLS_ROOT}/tools/bin/sdkmanager" "platform-tools" > /dev/null
+RUN yes "y" | "${ANDROID_TOOLS_ROOT}/tools/bin/sdkmanager" "extras;android;m2repository" > /dev/null
+RUN yes "y" | "${ANDROID_TOOLS_ROOT}/tools/bin/sdkmanager" "extras;google;m2repository" > /dev/null
+RUN yes "y" | "${ANDROID_TOOLS_ROOT}/tools/bin/sdkmanager" "patcher;v4" > /dev/null
+RUN rm "${ANDROID_SDK_ARCHIVE}"
+ENV PATH="${ANDROID_TOOLS_ROOT}/tools:${PATH}"
+ENV PATH="${ANDROID_TOOLS_ROOT}/tools/bin:${PATH}"
+# Silence warnings when accepting android licenses.
+RUN mkdir -p ~/.android
+RUN touch ~/.android/repositories.cfg
+
+# Setup gradle
+ENV GRADLE_ROOT="/opt/gradle"
+RUN mkdir -p "${GRADLE_ROOT}"
+ENV GRADLE_ARCHIVE="${GRADLE_ROOT}/gradle.zip"
+ENV GRADLE_URL="https://services.gradle.org/distributions/gradle-4.4-bin.zip"
+RUN wget --progress=dot:giga "$GRADLE_URL" -O "${GRADLE_ARCHIVE}"
+RUN unzip -q -d "${GRADLE_ROOT}" "${GRADLE_ARCHIVE}"
+ENV PATH="$GRADLE_ROOT/bin:$PATH"
+
+# Add npm to path.
+ENV PATH="/usr/bin:${PATH}"
+RUN dpkg-query -L nodejs
+# Install Firebase
+# This is why we need nodejs installed.
+RUN /usr/bin/npm --verbose install -g firebase-tools
+
+# Install dashing
+# This is why we need golang installed.
+RUN mkdir -p /opt/gopath/bin
+ENV GOPATH=/opt/gopath
+ENV PATH="${GOPATH}/bin:${PATH}"
+#RUN go get -u github.com/technosophos/dashing
+
+# Set locale to en_US
+RUN locale-gen en_US "en_US.UTF-8" && dpkg-reconfigure locales
+ENV LANG en_US.UTF-8
+
+# Install coveralls and Firebase
+# This is why we need ruby installed.
+# Skip all the documentation (-N) since it's just on CI.
+RUN gem install coveralls -N
+RUN gem install bundler -N
+# Install fastlane which is used on Linux to build and deploy Android
+# builds to the Play Store.
+RUN gem install fastlane -N
 
 WORKDIR /var/www
 
-ENV PATH="${PATH}:${FLUTTER_HOME}/bin:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/tools/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/build-tools/${ANDROID_BUILD_TOOLS_VERSION}"
+ENV FLUTTER_VERSION=1.7.8+hotfix.4 
+ENV FLUTTER_HOME='/opt/flutter'
 
-RUN \
-#Install dependencies
-# ---------------------------------------------------
-echo "\n\nInstalling dependencies and cleaning cache" && \
-apt-get update -qq && \
-apt-get install -qq --no-install-recommends curl git lib32stdc++6 xz-utils unzip openjdk-8-jdk libglu1-mesa openssh-client -y > /dev/null && \
-apt-get clean && rm -rf /var/lib/apt/lists/* && \
-\
-#Download and install Flutter
-# ---------------------------------------------------
-curl -Ls https://storage.googleapis.com/flutter_infra/releases/stable/linux/flutter_linux_v${FLUTTER_VERSION}-stable.tar.xz -o ./flutter.tar.xz && \
-echo "\n\nDownloading and installing Flutter ${FLUTTER_VERSION}" && \
-tar -xJf ./flutter.tar.xz && \
-rm ./flutter.tar.xz && \
-mv flutter /opt && \
-flutter config --no-analytics && \
-echo "Flutter installed with success" ; \
-\
-#Download and install Android SDK Manager
-# ---------------------------------------------------
-echo "\n\nDownloading and installing Android SDK ${ANDROID_SDK_TOOLS_VERSION}" && \
-mkdir -p ${ANDROID_SDK_ROOT} && cd ${ANDROID_SDK_ROOT} && \
-curl -Ls https://dl.google.com/android/repository/sdk-tools-linux-${ANDROID_SDK_TOOLS_VERSION}.zip -o android-sdk.zip && \
-unzip -q android-sdk.zip && \
-rm ./android-sdk.zip && \
-echo "Android SDK installed with success"
+ENV PATH="${PATH}:${FLUTTER_HOME}/bin"
 
-#Accept Android SDK Manager licenses
-# ---------------------------------------------------
-RUN \
-echo "\n\nAccepting Android SDK Manager licenses" && \
-mkdir -p /root/.android && \
-touch /root/.android/repositories.cfg && \
-yes | sdkmanager --licenses > /dev/null && \
-echo "All licenses accepted" ; \
-\
-#Install Android SDK Tools
-# ---------------------------------------------------
-echo "\n\nInstalling Android SDK build tools ${ANDROID_BUILD_TOOLS_VERSION} and platform tools ${ANDROID_SDK_PLATFORM}" && \
-sdkmanager --verbose "platform-tools" "platforms;android-${ANDROID_SDK_PLATFORM}" "build-tools;${ANDROID_BUILD_TOOLS_VERSION}" && \
-echo "\n\nInstalling Android Repository, Google Repository and Google Play Services" && \
-sdkmanager --verbose "extras;android;m2repository" "extras;google;m2repository"  "extras;google;google_play_services" && \
-ls -l /opt/android-sdk/
+RUN curl -Ls https://storage.googleapis.com/flutter_infra/releases/stable/linux/flutter_linux_v${FLUTTER_VERSION}-stable.tar.xz -o ./flutter.tar.xz 
+RUN echo "\n\nDownloading and installing Flutter ${FLUTTER_VERSION}" 
+RUN tar -xJf ./flutter.tar.xz -C /opt
+RUN rm ./flutter.tar.xz 
+RUN flutter config --no-analytics 
+RUN flutter precache --all-platforms
 
-CMD tail -f /dev/null
+ENV ANDROID_SDK_ROOT=${ANDROID_TOOLS_ROOT}
+ENV ANDROID_HOME={ANDROID_SDK_ROOT}
+
+ENV PATH="${PATH}:${FLUTTER_HOME}/bin:${ANDROID_SDK_ROOT}/tools:${ANDROID_SDK_ROOT}/tools/bin:${ANDROID_SDK_ROOT}/platform-tools:${ANDROID_SDK_ROOT}/build-tools/28.0.3:${ANDROID_HOME}"
+
+RUN yes "y" | flutter doctor --android-licenses
+RUN flutter doctor -v
+RUN echo "Flutter installed with success"
+
+RUN apt-get install -y --no-install-recommends gettext-base
+
+RUN rm -rf /var/lib/apt/lists/* \
+	&& localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+ENV LANG en_US.UTF-8
