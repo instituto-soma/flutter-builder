@@ -61,7 +61,7 @@ RUN touch ~/.android/repositories.cfg
 ENV GRADLE_ROOT="/opt/gradle"
 RUN mkdir -p "${GRADLE_ROOT}"
 ENV GRADLE_ARCHIVE="${GRADLE_ROOT}/gradle.zip"
-ENV GRADLE_URL="https://services.gradle.org/distributions/gradle-4.4-bin.zip"
+ENV GRADLE_URL="https://services.gradle.org/distributions/gradle-6.0.1-all.zip"
 RUN wget --progress=dot:giga "$GRADLE_URL" -O "${GRADLE_ARCHIVE}"
 RUN unzip -q -d "${GRADLE_ROOT}" "${GRADLE_ARCHIVE}"
 ENV PATH="$GRADLE_ROOT/bin:$PATH"
@@ -95,7 +95,7 @@ RUN gem install fastlane -N
 
 WORKDIR /var/www
 
-ENV FLUTTER_VERSION=1.7.8+hotfix.4 
+ENV FLUTTER_VERSION=1.12.13+hotfix.8
 ENV FLUTTER_HOME='/opt/flutter'
 
 ENV PATH="${PATH}:${FLUTTER_HOME}/bin"
