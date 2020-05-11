@@ -1,5 +1,4 @@
 FROM ruby:2.6.3-stretch
-MAINTAINER Flutter Developers <flutter-dev@googlegroups.com>
 
 RUN apt-get update -y
 RUN apt-get upgrade -y
@@ -95,12 +94,11 @@ RUN gem install fastlane -N
 
 WORKDIR /var/www
 
-ENV FLUTTER_VERSION=1.12.13+hotfix.8
+ENV FLUTTER_VERSION=1.17.0
 ENV FLUTTER_HOME='/opt/flutter'
 
 ENV PATH="${PATH}:${FLUTTER_HOME}/bin"
-
-RUN curl -Ls https://storage.googleapis.com/flutter_infra/releases/stable/linux/flutter_linux_v${FLUTTER_VERSION}-stable.tar.xz -o ./flutter.tar.xz 
+RUN curl -Ls https://storage.googleapis.com/flutter_infra/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz -o ./flutter.tar.xz 
 RUN echo "\n\nDownloading and installing Flutter ${FLUTTER_VERSION}" 
 RUN tar -xJf ./flutter.tar.xz -C /opt
 RUN rm ./flutter.tar.xz 
