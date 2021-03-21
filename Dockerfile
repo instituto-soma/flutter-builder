@@ -1,4 +1,4 @@
-FROM cirrusci/flutter:1.22.6
+FROM cirrusci/flutter:2.0.2
 
 RUN apt-get update -y
 RUN apt-get upgrade -y
